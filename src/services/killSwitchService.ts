@@ -66,6 +66,17 @@ export class KillSwitchService {
     }
 
     try {
+      const { auditLogService } = require('./auditLogService');
+      auditLogService.log(
+        actor,
+        enabled ? 'GLOBAL_SYSTEM_ENABLED' : 'GLOBAL_SYSTEM_KILL_SWITCH_ACTIVATED',
+        'SYSTEM',
+        'kill_switch',
+        { previous, newStatus: value }
+      );
+    } catch {}
+
+    try {
       // Dynamic import or require to avoid circular dependency
       const { wsManager } = require('../ws/websocketServer');
       wsManager.broadcast('kill_switch_updated', {

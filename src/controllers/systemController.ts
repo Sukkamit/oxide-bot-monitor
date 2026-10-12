@@ -43,11 +43,12 @@ export class SystemController {
     }
   };
 
-  public getAuditLogs = async (_req: Request, res: Response): Promise<void> => {
+  public getAuditLogs = async (req: Request, res: Response): Promise<void> => {
     try {
-      const pool = getPool();
-      const result = await pool.query(`SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT 50;`);
-      res.status(200).json({ success: true, data: result.rows });
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 50;
+      const { auditLogService } = require('../services/auditLogService');
+      const logs = await auditLogService.getLogs(limit);
+      res.status(200).json({ success: true, data: logs });
     } catch (err: any) {
       res.status(200).json({ success: true, data: [] });
     }

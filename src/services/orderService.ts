@@ -126,11 +126,20 @@ export class OrderService {
       console.warn('[Order DB Create Warning]:', err.message);
     }
 
+    try {
+      const { auditLogService } = require('./auditLogService');
+      auditLogService.log('OPERATOR', 'ORDER_CREATED', 'ORDER', String(newOrder.id), {
+        externalOrderId,
+        amount,
+        currency,
+      });
+    } catch {}
+
     this.inMemoryOrders.unshift(newOrder);
     return newOrder;
   }
 
-  // Dispatch Order to Bot (Checks Global Kill-Switch First!)
+  // Dispatch Order to Bot (Checks Global Kill-Switch & Bot Online Status First!)
   public async dispatchOrder(
     orderId: number | string,
     botId: string
@@ -144,6 +153,16 @@ export class OrderService {
     const { order } = (await this.getOrderById(orderId)) || {};
     if (!order) {
       throw new Error(`Order #${orderId} not found.`);
+    }
+
+    // 2. Validate Target Bot is Online & Available
+    const { botService } = require('./botService');
+    const bot = await botService.getBotById(botId);
+    if (!bot) {
+      throw new Error(`BOT_NOT_FOUND: ไม่พบเครื่องบอท '${botId}' ในระบบ`);
+    }
+    if (bot.status !== 'online') {
+      throw new Error(`BOT_NOT_AVAILABLE: บอท '${botId}' (${bot.name}) อยู่ในสถานะ '${bot.status.toUpperCase()}' ไม่พร้อมรับงาน (กรุณากด "เริ่มทำงาน" ที่เครื่องบอทก่อน)`);
     }
 
     order.status = 'processing';
@@ -164,6 +183,16 @@ export class OrderService {
     } catch {
       // Fallback
     }
+
+    try {
+      const { auditLogService } = require('./auditLogService');
+      auditLogService.log('DISPATCHER', 'ORDER_DISPATCHED', 'ORDER', String(order.id), {
+        botId,
+        botName: bot.name,
+        amount: order.amount,
+        externalOrderId: order.external_order_id,
+      });
+    } catch {}
 
     return {
       success: true,
@@ -198,6 +227,14 @@ export class OrderService {
     } catch {
       // Fallback
     }
+
+    try {
+      const { auditLogService } = require('./auditLogService');
+      auditLogService.log(botId, 'ORDER_COMPLETED', 'ORDER', String(order.id), {
+        result,
+        amount: order.amount,
+      });
+    } catch {}
 
     return order;
   }

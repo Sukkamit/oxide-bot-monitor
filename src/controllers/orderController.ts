@@ -81,11 +81,15 @@ export class OrderController {
           targetBotId = onlineBots[index].id;
           OrderController.roundRobinIndex++;
         } else {
-          targetBotId = bots[0]?.id || 'bot-02';
+          res.status(400).json({
+            success: false,
+            error: 'NO_ONLINE_BOTS: ไม่มีบอทเครื่องใดที่ออนไลน์ (Online) อยู่ในระบบ กรุณากด "เริ่มทำงาน" ที่เครื่องบอทก่อนจ่ายงาน',
+          });
+          return;
         }
       }
 
-      const finalBotId = targetBotId || 'bot-02';
+      const finalBotId = targetBotId!;
       const result = await orderService.dispatchOrder(orderId, finalBotId);
       botService.updateBotTask(finalBotId, `กำลังประมวลผลออเดอร์ #${orderId}`, 'In Progress');
 

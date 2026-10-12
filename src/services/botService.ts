@@ -203,6 +203,17 @@ export class BotService {
     }
 
     try {
+      const { auditLogService } = require('./auditLogService');
+      auditLogService.log(
+        requestedBy,
+        `BOT_COMMAND_${command.toUpperCase()}`,
+        'BOT_AGENT',
+        botId,
+        { command, nextStatus }
+      );
+    } catch {}
+
+    try {
       const { wsManager } = require('../ws/websocketServer');
       wsManager.broadcast('bot_updated', { botId, status: nextStatus, command });
     } catch {
@@ -288,6 +299,17 @@ export class BotService {
         } catch {
           // ignore
         }
+
+        try {
+          const { auditLogService } = require('./auditLogService');
+          auditLogService.log(
+            'SYSTEM_WATCHDOG',
+            'BOT_HEARTBEAT_TIMEOUT',
+            'BOT_AGENT',
+            b.id,
+            { timeoutSeconds, lastHeartbeat: b.last_heartbeat }
+          );
+        } catch {}
       }
     }
 
