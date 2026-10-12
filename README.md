@@ -20,10 +20,10 @@
    - **Global System Control (Kill-Switch)**: แสดงสถานะ `ทั้งระบบ: เปิด` / `ทั้งระบบ: ปิด` พร้อมปุ่ม `[เปิดทั้งระบบ]` (สีเขียว) และ `[ปิดทั้งระบบ]` (สีแดง)
    - **Code Deployment & Update Management**: แสดง `แพ็กล่าสุด: oxide-2026-09-17T15-48-05 - 0.18 MB` พร้อมปุ่ม `[แพ็กโค้ดบอท]` และ `[อัปเดตทุกเครื่อง]`
 3. **Overview Metrics Strip**:
-   - **ออนไลน์ทั้งหมด**: 5 เครื่อง
-   - **Active (รับงาน)**: 1 เครื่อง
-   - **Standby**: 4 เครื่อง
-   - **กำลังทำงาน (In Progress)**: 0 เครื่อง
+   - **ออนไลน์ทั้งหมด**: 5 เครื่อง (เริ่มต้นบอทออนไลน์พร้อมทำงานครบทั้ง 5 เครื่อง)
+   - **Active (รับงาน)**: คำนวณแบบ Dynamic ตามจำนวนเครื่องบอทที่กำลังรับงานประมวลผลจริง
+   - **Standby**: คำนวณแบบ Dynamic ตามเครื่องที่ว่างพร้อมรับงาน ($\text{Standby} = \text{ออนไลน์ทั้งหมด} - \text{Active}$)
+   - **กำลังทำงาน (In Progress)**: คำนวณแบบ Dynamic ตามจำนวนออเดอร์ที่กำลังประมวลผลอยู่จริง
 4. **เครื่องบอทประจำการ (Bot Instances Grid)**:
    - การ์ดเครื่องบอท 5 เครื่อง (`LAPTOP-RCVDH...`, `DESKTOP-048C...`, `DESKTOP-LDD0...`, `DESKTOP-D6RE...`, `NODE-SERVER-05...`)
    - ป้ายสถานะ `ONLINE`, `STANDBY`, `OFFLINE`, `TIMEOUT/ERR`
@@ -205,13 +205,14 @@ PASS tests/oxideMonitor.test.ts
       √ POST /api/v1/orders should create an order in PENDING status
       √ POST /api/v1/orders/:id/dispatch should dispatch to assigned bot
       √ POST /api/v1/orders/:id/complete should mark order as COMPLETED
+      √ Reject complete order if the assigned bot is STOPPED / OFFLINE
     6. Audit Logs
       √ GET /api/v1/system/audit-logs should return history of operations
 
 Test Suites: 1 passed, 1 total
-Tests:       17 passed, 1 total
+Tests:       18 passed, 18 total
 Snapshots:   0 total
-Time:        9.159 s
+Time:        5.418 s
 ```
 
 ---
