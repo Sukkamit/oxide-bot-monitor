@@ -55,9 +55,9 @@ export class OrderService {
     return this.inMemoryOrders;
   }
 
-  public async getOrderById(orderId: number): Promise<{ order: Order; events: OrderEvent[] } | null> {
+  public async getOrderById(orderId: number | string): Promise<{ order: Order; events: OrderEvent[] } | null> {
     const orders = await this.getOrders();
-    const order = orders.find((o) => o.id === orderId);
+    const order = orders.find((o) => o.id === Number(orderId) || o.external_order_id === String(orderId));
     if (!order) return null;
 
     let events: OrderEvent[] = [];
@@ -65,7 +65,7 @@ export class OrderService {
       const pool = getPool();
       const res = await pool.query(
         `SELECT * FROM order_events WHERE order_id = $1 ORDER BY created_at ASC;`,
-        [orderId]
+        [order.id]
       );
       events = res.rows.map((r) => ({
         id: parseInt(r.id, 10),
@@ -79,7 +79,7 @@ export class OrderService {
       events = [
         {
           id: 1,
-          order_id: orderId,
+          order_id: order.id,
           event_type: 'ORDER_CREATED',
           payload: { external_order_id: order.external_order_id, amount: order.amount },
           created_at: order.created_at,
@@ -132,7 +132,7 @@ export class OrderService {
 
   // Dispatch Order to Bot (Checks Global Kill-Switch First!)
   public async dispatchOrder(
-    orderId: number,
+    orderId: number | string,
     botId: string
   ): Promise<{ success: boolean; order: Order; message: string }> {
     // 1. Check Global Kill-Switch!
@@ -154,12 +154,12 @@ export class OrderService {
       const pool = getPool();
       await pool.query(
         `UPDATE orders SET status = 'processing', updated_at = NOW() WHERE id = $1;`,
-        [orderId]
+        [order.id]
       );
       await pool.query(
         `INSERT INTO order_events (order_id, event_type, payload, created_at)
          VALUES ($1, 'ORDER_DISPATCHED_TO_BOT', $2, NOW());`,
-        [orderId, JSON.stringify({ botId, timestamp: new Date() })]
+        [order.id, JSON.stringify({ botId, timestamp: new Date() })]
       );
     } catch {
       // Fallback
@@ -174,7 +174,7 @@ export class OrderService {
 
   // Complete Order
   public async completeOrder(
-    orderId: number,
+    orderId: number | string,
     botId: string,
     result?: Record<string, unknown>
   ): Promise<Order> {
@@ -188,12 +188,12 @@ export class OrderService {
       const pool = getPool();
       await pool.query(
         `UPDATE orders SET status = 'completed', updated_at = NOW() WHERE id = $1;`,
-        [orderId]
+        [order.id]
       );
       await pool.query(
         `INSERT INTO order_events (order_id, event_type, payload, created_at)
          VALUES ($1, 'ORDER_COMPLETED', $2, NOW());`,
-        [orderId, JSON.stringify({ botId, result, timestamp: new Date() })]
+        [order.id, JSON.stringify({ botId, result, timestamp: new Date() })]
       );
     } catch {
       // Fallback

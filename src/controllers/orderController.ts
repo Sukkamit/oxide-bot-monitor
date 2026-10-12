@@ -28,7 +28,7 @@ export class OrderController {
 
   public getOrder = async (req: Request, res: Response): Promise<void> => {
     try {
-      const orderId = parseInt(req.params.id, 10);
+      const orderId = isNaN(Number(req.params.id)) ? req.params.id : parseInt(req.params.id, 10);
       const data = await orderService.getOrderById(orderId);
       if (!data) {
         res.status(404).json({ success: false, error: 'order_not_found' });
@@ -60,7 +60,7 @@ export class OrderController {
 
   public dispatchOrder = async (req: Request, res: Response): Promise<void> => {
     try {
-      const orderId = parseInt(req.params.id, 10);
+      const orderId = isNaN(Number(req.params.id)) ? req.params.id : parseInt(req.params.id, 10);
       const parsed = dispatchSchema.safeParse(req.body);
       if (!parsed.success) {
         res.status(400).json({ success: false, error: 'invalid_dispatch_data', details: parsed.error.issues });
@@ -87,7 +87,7 @@ export class OrderController {
 
   public completeOrder = async (req: Request, res: Response): Promise<void> => {
     try {
-      const orderId = parseInt(req.params.id, 10);
+      const orderId = isNaN(Number(req.params.id)) ? req.params.id : parseInt(req.params.id, 10);
       const botId = req.body?.botId || 'bot-01';
       const order = await orderService.completeOrder(orderId, botId, req.body?.result);
       res.status(200).json({ success: true, data: order });
