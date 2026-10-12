@@ -107,11 +107,12 @@ export class OrderController {
   public completeOrder = async (req: Request, res: Response): Promise<void> => {
     try {
       const orderId = isNaN(Number(req.params.id)) ? req.params.id : parseInt(req.params.id, 10);
-      const botId = req.body?.botId || 'bot-01';
+      const existing = await orderService.getOrderById(orderId);
+      const botId = req.body?.botId || existing?.order?.assigned_bot_id || 'bot-01';
       const order = await orderService.completeOrder(orderId, botId, req.body?.result);
 
       const { botService } = require('../services/botService');
-      botService.updateBotTask(order.assigned_bot_id || botId, `สำเร็จออเดอร์ #${orderId}`, 'Done');
+      botService.updateBotTask(botId, `สำเร็จออเดอร์ #${orderId}`, 'Done');
 
       res.status(200).json({ success: true, data: order });
     } catch (err: any) {
