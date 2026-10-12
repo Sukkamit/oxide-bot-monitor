@@ -327,12 +327,42 @@ export class BotService {
     const bots = await this.getBots();
     const killSwitch = await killSwitchService.getStatus();
     const latestPkg = await deploymentService.getLatestPackage();
+    
+    let orders: any[] = [];
+    try {
+      const { orderService } = require('./orderService');
+      orders = await orderService.getOrders();
+    } catch {}
 
     const onlineBots = bots.filter((b) => b.status === 'online');
     const onlineCount = onlineBots.length;
-    const activeCount = killSwitch.isEnabled ? 1 : 0;
-    const standbyCount = Math.max(0, onlineCount - activeCount);
-    const inProgressCount = 0;
+
+    // Identify orders currently in processing
+    const processingOrders = orders.filter((o: any) => o.status === 'processing');
+    const busyBotIds = new Set<string>(
+      processingOrders.map((o: any) => o.assigned_bot_id).filter(Boolean)
+    );
+    bots.forEach((b) => {
+      if ((b.last_task_status || '').toLowerCase() === 'in progress') {
+        busyBotIds.add(b.id);
+      }
+    });
+
+    const busyOnlineBots = onlineBots.filter((b) => busyBotIds.has(b.id));
+    const inProgressCount = Math.max(processingOrders.length, busyOnlineBots.length);
+
+    let activeCount = 0;
+    let standbyCount = 0;
+
+    if (!killSwitch.isEnabled) {
+      // When Kill-Switch is OFF, system ceases dispatching/accepting work
+      activeCount = 0;
+      standbyCount = onlineCount;
+    } else {
+      // Active count represents bots actively assigned/processing work
+      activeCount = busyOnlineBots.length > 0 ? busyOnlineBots.length : (onlineCount > 0 ? 1 : 0);
+      standbyCount = Math.max(0, onlineCount - activeCount);
+    }
 
     return {
       onlineCount,
@@ -389,6 +419,10 @@ export class BotService {
     if (b) {
       b.last_task_desc = taskDesc;
       b.last_task_status = taskStatus;
+      try {
+        const { wsManager } = require('../ws/websocketServer');
+        wsManager.broadcast('bot_updated', { botId, last_task_desc: taskDesc, last_task_status: taskStatus });
+      } catch {}
     }
   }
 }

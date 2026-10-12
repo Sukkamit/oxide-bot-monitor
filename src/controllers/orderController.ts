@@ -93,6 +93,11 @@ export class OrderController {
       const result = await orderService.dispatchOrder(orderId, finalBotId);
       botService.updateBotTask(finalBotId, `กำลังประมวลผลออเดอร์ #${orderId}`, 'In Progress');
 
+      try {
+        const { wsManager } = require('../ws/websocketServer');
+        wsManager.broadcast('order_dispatched', { orderId, botId: finalBotId });
+      } catch {}
+
       res.status(200).json({
         success: true,
         order: result.order,
@@ -113,6 +118,11 @@ export class OrderController {
 
       const { botService } = require('../services/botService');
       botService.updateBotTask(botId, `สำเร็จออเดอร์ #${orderId}`, 'Done');
+
+      try {
+        const { wsManager } = require('../ws/websocketServer');
+        wsManager.broadcast('order_completed', { orderId, botId });
+      } catch {}
 
       res.status(200).json({ success: true, data: order });
     } catch (err: any) {

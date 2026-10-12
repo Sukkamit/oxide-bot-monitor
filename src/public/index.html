@@ -403,6 +403,7 @@
 
     .task-box.task-done { border-left-color: var(--success); }
     .task-box.task-failed { border-left-color: var(--danger); }
+    .task-box.task-inprog { border-left-color: #3b82f6; }
 
     .task-box-top {
       display: flex;
@@ -425,6 +426,7 @@
 
     .task-badge.done { background: var(--badge-done); color: var(--badge-done-text); }
     .task-badge.failed { background: var(--badge-failed); color: var(--badge-failed-text); }
+    .task-badge.inprog { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
 
     .task-desc {
       color: var(--text-main);
@@ -820,6 +822,7 @@
       }
     }
     connectWebSocket();
+    setInterval(refreshAllData, 3000);
 
     // Data Loaders
     async function refreshAllData() {
@@ -881,10 +884,10 @@
         card.className = `bot-card ${isOffline ? 'offline' : ''} ${isError ? 'error' : ''}`;
 
         let statusClass = 'badge-standby';
-        let statusLabel = 'STANDBY';
+        let isBusy = (bot.last_task_status || '').toLowerCase() === 'in progress';
         if (bot.status === 'online') {
-          statusClass = bot.is_active_accepting ? 'badge-online' : 'badge-standby';
-          statusLabel = bot.is_active_accepting ? 'ONLINE' : 'STANDBY';
+          statusClass = isBusy ? 'badge-online' : 'badge-standby';
+          statusLabel = isBusy ? 'ACTIVE' : 'STANDBY';
         } else if (bot.status === 'offline') {
           statusClass = 'badge-offline';
           statusLabel = 'OFFLINE';
@@ -893,8 +896,19 @@
           statusLabel = 'TIMEOUT / ERR';
         }
 
-        const taskStatusClass = (bot.last_task_status || '').toLowerCase() === 'done' ? 'done' : 'failed';
-        const taskBoxClass = (bot.last_task_status || '').toLowerCase() === 'done' ? 'task-done' : 'task-failed';
+        let taskStatusClass = 'done';
+        let taskBoxClass = 'task-done';
+        const lts = (bot.last_task_status || '').toLowerCase();
+        if (lts === 'in progress') {
+          taskStatusClass = 'inprog';
+          taskBoxClass = 'task-inprog';
+        } else if (lts === 'failed') {
+          taskStatusClass = 'failed';
+          taskBoxClass = 'task-failed';
+        } else {
+          taskStatusClass = 'done';
+          taskBoxClass = 'task-done';
+        }
 
         // Heartbeat formatted
         const hbSecs = bot.last_heartbeat ? Math.round((Date.now() - new Date(bot.last_heartbeat).getTime()) / 1000) : 999;
