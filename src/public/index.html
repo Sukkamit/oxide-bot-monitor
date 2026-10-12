@@ -781,6 +781,7 @@
 
     // State
     let currentBots = [];
+    let currentOrders = [];
     let ws = null;
 
     // WebSocket Connection
@@ -952,16 +953,20 @@
         const json = await res.json();
         const tbody = document.getElementById('orders-table-body');
         if (json.success && Array.isArray(json.data)) {
+          currentOrders = json.data;
           if (json.data.length === 0) {
             tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#64748b;">ไม่มีรายการออเดอร์ในระบบ</td></tr>';
             return;
           }
-          tbody.innerHTML = json.data.map(o => `
+          tbody.innerHTML = json.data.map(o => {
+            const assignedBot = currentBots.find(b => b.id === o.assigned_bot_id);
+            const isBotStopped = assignedBot && assignedBot.status !== 'online';
+            return `
             <tr>
               <td><strong>#${o.id}</strong> <span style="color:#64748b;font-size:0.75rem;">(${o.external_order_id})</span></td>
               <td><span class="status-tag status-${o.status.toLowerCase()}">${o.status}</span></td>
               <td>${o.amount} ${o.currency}</td>
-              <td>${o.assigned_bot_id || '<span style="color:#64748b;">(ยังไม่ได้กำหนด)</span>'}</td>
+              <td>${o.assigned_bot_id ? `${o.assigned_bot_id} ${isBotStopped ? '<span style="color:#ef4444;font-size:0.75rem;">(หยุดทำงาน)</span>' : ''}` : '<span style="color:#64748b;">(ยังไม่ได้กำหนด)</span>'}</td>
               <td style="font-size:0.75rem;color:#94a3b8;">${new Date(o.created_at).toLocaleTimeString('th-TH')}</td>
               <td>
                 ${o.status === 'pending' || o.status === 'queued' ? `
@@ -977,10 +982,15 @@
                     <button class="btn btn-sm btn-primary" onclick="dispatchOrder('${o.id}')">จ่ายงาน</button>
                   </div>
                 ` : ''}
-                ${o.status === 'processing' ? `<button class="btn btn-sm btn-success" onclick="completeOrder('${o.id}')">สำเร็จงาน</button>` : ''}
+                ${o.status === 'processing' ? (
+                  isBotStopped ? 
+                    `<button class="btn btn-sm" style="background:#b45309;color:#fff;border:1px solid #d97706;" onclick="completeOrder('${o.id}')" title="บอท '${o.assigned_bot_id}' หยุดทำงานอยู่ กรุณากดเริ่มทำงานก่อน">⚠️ สำเร็จงาน (บอทหยุด)</button>` :
+                    `<button class="btn btn-sm btn-success" onclick="completeOrder('${o.id}')">สำเร็จงาน</button>`
+                ) : ''}
               </td>
             </tr>
-          `).join('');
+          `;
+          }).join('');
         }
       } catch (e) {
         console.error('Fetch orders failed:', e);
@@ -1150,6 +1160,15 @@
 
     async function completeOrder(orderId) {
       try {
+        const order = currentOrders.find(o => String(o.id) === String(orderId));
+        if (order && order.assigned_bot_id) {
+          const assignedBot = currentBots.find(b => b.id === order.assigned_bot_id);
+          if (assignedBot && assignedBot.status !== 'online') {
+            alert(`⚠️ ไม่สามารถสำเร็จงานได้:\n\nเครื่องบอท '${assignedBot.name || assignedBot.id}' กำลังอยู่ในสถานะ '${assignedBot.status.toUpperCase()}' (หยุดทำงานอยู่)\n\n👉 กรุณากดปุ่ม "เริ่มทำงาน" สีเขียวที่การ์ดบอทเครื่องนี้ก่อน เพื่อเปิดบอท แล้วจึงกดยืนยันสำเร็จงานอีกครั้งครับ`);
+            return;
+          }
+        }
+
         const res = await fetch(`/api/v1/orders/${orderId}/complete`, { method: 'POST' });
         const json = await res.json();
         if (json.success) {
