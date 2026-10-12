@@ -1,0 +1,208 @@
+{
+  "info": {
+    "_postman_id": "oxide-bot-monitor-collection",
+    "name": "OXIDE Bot Monitor API Collection",
+    "description": "Comprehensive Postman test collection for OXIDE Centralized Bot Monitoring & Order Tracking Service",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "System & Overview",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/health"
+          }
+        },
+        {
+          "name": "Get Dashboard Overview",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/overview"
+          }
+        },
+        {
+          "name": "Get Kill-Switch Status",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/system/kill-switch"
+          }
+        },
+        {
+          "name": "Toggle Kill-Switch",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"enabled\": true,\n  \"actor\": \"admin\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/system/kill-switch"
+          }
+        },
+        {
+          "name": "Get Audit Logs",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/system/audit-logs"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Bot Management & Telemetry",
+      "item": [
+        {
+          "name": "List All Bots",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/bots"
+          }
+        },
+        {
+          "name": "Get Bot Detail",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/bots/bot-02"
+          }
+        },
+        {
+          "name": "Send Bot Command (Restart)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"command\": \"restart\",\n  \"requestedBy\": \"admin\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/bots/bot-02/commands"
+          }
+        },
+        {
+          "name": "Ingest Bot Heartbeat",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cpu\": 15.4,\n  \"memory\": 38.2,\n  \"uptime\": 12000,\n  \"status\": \"online\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/bots/bot-02/heartbeat"
+          }
+        },
+        {
+          "name": "Check Heartbeat Timeouts Watchdog",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/bots/watchdog/check"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Code Deployment",
+      "item": [
+        {
+          "name": "List Releases",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/deployments/packages"
+          }
+        },
+        {
+          "name": "Pack New Code Version",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customName\": \"oxide-2026-09-17T15-48-05\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/deployments/packages"
+          }
+        },
+        {
+          "name": "Deploy to All Bots",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"deployed_by\": \"admin\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/deployments/deploy-all"
+          }
+        },
+        {
+          "name": "Deploy to Specific Bot",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"deployed_by\": \"admin\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/deployments/deploy-bot/bot-01"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Order Tracking & State Machine",
+      "item": [
+        {
+          "name": "List Orders",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/orders"
+          }
+        },
+        {
+          "name": "Create Order",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"external_order_id\": \"ORD-POSTMAN-001\",\n  \"amount\": 590,\n  \"currency\": \"THB\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/orders"
+          }
+        },
+        {
+          "name": "Dispatch Order (Checks Kill-Switch)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"botId\": \"bot-02\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/orders/1/dispatch"
+          }
+        },
+        {
+          "name": "Complete Order",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"botId\": \"bot-02\",\n  \"result\": { \"tx\": \"OK\" }\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/orders/1/complete"
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
+  ]
+}

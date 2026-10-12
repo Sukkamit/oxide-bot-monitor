@@ -1,0 +1,155 @@
+### ==============================================================================
+### OXIDE Bot Monitor & Centralized Order Tracking Service - REST API Tests
+### Base URL: http://localhost:3000
+### ==============================================================================
+
+@baseUrl = http://localhost:3000
+
+### 1. Health Check
+GET {{baseUrl}}/health
+
+### 2. Overview Dashboard Summary (Online, Active, Standby, In Progress, Kill-Switch)
+GET {{baseUrl}}/api/v1/overview
+
+### 3. Get Global Kill-Switch Status
+GET {{baseUrl}}/api/v1/system/kill-switch
+
+### 4. Enable System (Kill-Switch: OFF / Active Accepting Orders)
+POST {{baseUrl}}/api/v1/system/kill-switch
+Content-Type: application/json
+
+{
+  "enabled": true,
+  "actor": "admin"
+}
+
+### 5. Disable System (Kill-Switch: ON / Rejecting Orders)
+POST {{baseUrl}}/api/v1/system/kill-switch
+Content-Type: application/json
+
+{
+  "enabled": false,
+  "actor": "admin"
+}
+
+### 6. Get Audit Logs
+GET {{baseUrl}}/api/v1/system/audit-logs
+
+### ==============================================================================
+### Bot Fleet Management & Commands
+### ==============================================================================
+
+### 7. List All Bot Agents (5 Nodes)
+GET {{baseUrl}}/api/v1/bots
+
+### 8. Get Specific Bot Details
+GET {{baseUrl}}/api/v1/bots/bot-02
+
+### 9. Send Start Command to Bot
+POST {{baseUrl}}/api/v1/bots/bot-02/commands
+Content-Type: application/json
+
+{
+  "command": "start",
+  "requestedBy": "admin"
+}
+
+### 10. Send Stop Command to Bot
+POST {{baseUrl}}/api/v1/bots/bot-02/commands
+Content-Type: application/json
+
+{
+  "command": "stop",
+  "requestedBy": "admin"
+}
+
+### 11. Send Restart Command to Bot
+POST {{baseUrl}}/api/v1/bots/bot-02/commands
+Content-Type: application/json
+
+{
+  "command": "restart",
+  "requestedBy": "admin"
+}
+
+### 12. Ingest Bot Heartbeat Telemetry
+POST {{baseUrl}}/api/v1/bots/bot-02/heartbeat
+Content-Type: application/json
+
+{
+  "cpu": 12.8,
+  "memory": 36.4,
+  "uptime": 14200,
+  "status": "online"
+}
+
+### 13. Trigger Heartbeat Timeout Watchdog Check
+POST {{baseUrl}}/api/v1/bots/watchdog/check
+
+### ==============================================================================
+### Code Deployment & Release Packaging
+### ==============================================================================
+
+### 14. List Available Packages
+GET {{baseUrl}}/api/v1/deployments/packages
+
+### 15. Create / Pack New Bot Code Release
+POST {{baseUrl}}/api/v1/deployments/packages
+Content-Type: application/json
+
+{
+  "customName": "oxide-2026-09-17T15-48-05"
+}
+
+### 16. Deploy Package to All Bot Machines
+POST {{baseUrl}}/api/v1/deployments/deploy-all
+Content-Type: application/json
+
+{
+  "deployed_by": "admin"
+}
+
+### 17. Deploy Package to Single Bot
+POST {{baseUrl}}/api/v1/deployments/deploy-bot/bot-01
+Content-Type: application/json
+
+{
+  "deployed_by": "admin"
+}
+
+### ==============================================================================
+### Order Tracking & State Machine
+### ==============================================================================
+
+### 18. List Orders
+GET {{baseUrl}}/api/v1/orders
+
+### 19. Create New Order (Pending)
+POST {{baseUrl}}/api/v1/orders
+Content-Type: application/json
+
+{
+  "external_order_id": "ORD-LIVE-001",
+  "amount": 990,
+  "currency": "THB"
+}
+
+### 20. Dispatch Order to Bot (Fails if Kill-Switch is OFF!)
+POST {{baseUrl}}/api/v1/orders/1/dispatch
+Content-Type: application/json
+
+{
+  "botId": "bot-02"
+}
+
+### 21. Complete Order
+POST {{baseUrl}}/api/v1/orders/1/complete
+Content-Type: application/json
+
+{
+  "botId": "bot-02",
+  "result": {
+    "transactionId": "TX-WEB-9912",
+    "notes": "TOPUP SUCCESS"
+  }
+}

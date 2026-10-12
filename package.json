@@ -1,0 +1,38 @@
+{
+  "name": "oxide-central-monitor",
+  "version": "1.0.0",
+  "description": "Centralized Bot Monitoring & Order Tracking Service for Oxide Bots",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc && node -e \"require('fs').cpSync('src/public', 'dist/public', {recursive: true})\"",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "simulator": "node simulator/server.js",
+    "test": "jest --runInBand",
+    "test:coverage": "jest --runInBand --coverage"
+  },
+  "keywords": ["oxide", "bot-monitoring", "order-tracking", "state-machine", "kill-switch", "dashboard"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "pg": "^8.13.1",
+    "ws": "^8.18.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.13.1",
+    "@types/pg": "^8.11.11",
+    "@types/supertest": "^6.0.2",
+    "@types/ws": "^8.5.14",
+    "jest": "^29.7.0",
+    "pg-mem": "^3.0.4",
+    "supertest": "^7.0.0",
+    "ts-jest": "^29.2.5",
+    "tsx": "^4.19.2",
+    "typescript": "5.7.3"
+  }
+}
