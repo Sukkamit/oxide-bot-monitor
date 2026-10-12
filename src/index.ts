@@ -8,7 +8,7 @@ import { killSwitchService } from './services/killSwitchService';
 
 dotenv.config();
 
-const PORT = parseInt(process.env.PORT || '3000', 10);
+const PORT = parseInt(process.env.PORT || '3002', 10);
 
 async function startServer() {
   // Initialize Database tables if connected
