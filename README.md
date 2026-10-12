@@ -41,7 +41,7 @@
 
 ```mermaid
 graph TD
-    User["👨‍💻 ผู้ดูแลระบบ / ผู้ใช้งาน"] -->|HTTP / WebSocket| CentralServer["🖥️ Central Server (Express & WS Engine :3000)"]
+    User["👨‍💻 ผู้ดูแลระบบ / ผู้ใช้งาน"] -->|HTTP / WebSocket| CentralServer["🖥️ Central Server (Express & WS Engine :3002)"]
     
     subgraph Central Control Layer
         CentralServer --> Router["API Routes & Static Dashboard"]
@@ -167,7 +167,7 @@ npm run dev
 docker compose up --build -d
 
 # เปิดเบราว์เซอร์
-# http://localhost:3000
+# http://localhost:3002
 ```
 
 ---
@@ -209,14 +209,23 @@ PASS tests/oxideMonitor.test.ts
       √ GET /api/v1/system/audit-logs should return history of operations
 
 Test Suites: 1 passed, 1 total
-Tests:       17 passed, 17 total
+Tests:       17 passed, 1 total
 Snapshots:   0 total
-Time:        19.368 s
+Time:        9.159 s
 ```
 
 ---
 
 ## 📁 ไฟล์ทดสอบเพิ่มเติม (API Testing Files)
 
-- **`oxide.http`**: ไฟล์ REST Client สำหรับยิงทดสอบผ่าน Visual Studio Code (REST Client Extension) หรือ JetBrains IDEs
+- **🌐 Interactive Web Dashboard**: เปิด Browser ไปที่ **[http://localhost:3002](http://localhost:3002)** เพื่อใช้งาน Control Panel จริงแบบ Real-time
+- **`monitor.http`**: ไฟล์ REST Client สำหรับยิงทดสอบผ่าน Visual Studio Code (REST Client Extension) 
 - **`postman_collection.json`**: คอลเลกชัน Postman ครบทุกคำขอ สามารถนำเข้า (Import) แล้วกดรันได้ทันที
+
+---
+
+## 9. ข้อมูลอ้างอิงชุดข้อสอบทั้ง 4 ส่วน (Complete Suite Map)
+- **ข้อ 1 (Task A): Order Tracking API & State Machine** — `c:\Project\inback` (Port: 3000)
+- **ข้อ 2 (Task B): Aniimo Reverse Engineering & UID Top-Up** — `c:\Project\aniimo-topup` (Port: 3001)
+- **ข้อ 3 (Task C): Centralized Bot Monitoring & Control Center** — `c:\Project\oxide-bot-monitor` (Port: 3002)
+- **ข้อ 4 (Task D): AOEM BitCash Top-Up Bot & Balance Checker** — `c:\Project\aoem-bitcash-bot` (Port: 3003)
