@@ -216,6 +216,37 @@ describe('OXIDE Bot Monitor & Centralized Order Service Test Suite', () => {
       expect(res.body.success).toBe(true);
       expect(res.body.data.status).toBe('completed');
     });
+
+    it('Reject complete order if the assigned bot is STOPPED / OFFLINE', async () => {
+      // 1. Create and dispatch order to bot-03 (online)
+      const createRes = await request(app)
+        .post('/api/v1/orders')
+        .send({ externalOrderId: 'STOPPED-BOT-TEST-001', amount: 500 });
+      const orderId = createRes.body.data.id;
+      await request(app)
+        .post(`/api/v1/orders/${orderId}/dispatch`)
+        .send({ botId: 'bot-03' });
+
+      // 2. Stop bot-03
+      await botService.sendCommand('bot-03', 'stop', 'test_runner');
+
+      // 3. Attempt to complete order while bot is stopped - MUST be rejected!
+      const compRes = await request(app)
+        .post(`/api/v1/orders/${orderId}/complete`)
+        .send({ botId: 'bot-03' });
+
+      expect(compRes.status).toBe(400);
+      expect(compRes.body.success).toBe(false);
+      expect(compRes.body.error).toContain('BOT_STOPPED');
+
+      // 4. Start bot-03 again and complete successfully
+      await botService.sendCommand('bot-03', 'start', 'test_runner');
+      const retryComp = await request(app)
+        .post(`/api/v1/orders/${orderId}/complete`)
+        .send({ botId: 'bot-03' });
+      expect(retryComp.status).toBe(200);
+      expect(retryComp.body.data.status).toBe('completed');
+    });
   });
 
   describe('6. Audit Logs', () => {

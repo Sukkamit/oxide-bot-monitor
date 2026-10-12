@@ -210,6 +210,18 @@ export class OrderService {
     const { order } = (await this.getOrderById(orderId)) || {};
     if (!order) throw new Error(`Order #${orderId} not found.`);
 
+    // Guard: Validate that the assigned bot is online and active
+    const effectiveBotId = botId || order.assigned_bot_id;
+    if (effectiveBotId) {
+      const { botService } = require('./botService');
+      const bot = await botService.getBotById(effectiveBotId);
+      if (bot && bot.status !== 'online') {
+        throw new Error(
+          `BOT_STOPPED: ไม่สามารถกดสำเร็จงานได้ เนื่องจากบอท '${effectiveBotId}' (${bot.name}) อยู่ในสถานะ '${bot.status.toUpperCase()}' (หยุดทำงานอยู่) กรุณากด "เริ่มทำงาน" ก่อน`
+        );
+      }
+    }
+
     order.status = 'completed';
     order.updated_at = new Date();
 

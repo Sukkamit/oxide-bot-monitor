@@ -1154,9 +1154,11 @@
         const json = await res.json();
         if (json.success) {
           refreshAllData();
+        } else {
+          alert('ไม่สามารถสำเร็จงานได้: ' + (json.error || 'บอทหยุดทำงาน'));
         }
       } catch (e) {
-        alert('เกิดข้อผิดพลาด');
+        alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
       }
     }
 
