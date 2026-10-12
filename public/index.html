@@ -1,0 +1,1182 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OXIDE Bot Monitor & Centralized Order Service</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-main: #0f172a;
+      --bg-card: #1e293b;
+      --bg-card-sub: #172033;
+      --bg-hover: #334155;
+      --border-color: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --success: #10b981;
+      --success-hover: #059669;
+      --danger: #ef4444;
+      --danger-hover: #dc2626;
+      --warning: #f59e0b;
+      --warning-hover: #d97706;
+      --purple: #8b5cf6;
+      --badge-done: #065f46;
+      --badge-done-text: #34d399;
+      --badge-failed: #991b1b;
+      --badge-failed-text: #f87171;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      font-family: 'Prompt', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top Navigation Header */
+    header {
+      background: #090d16;
+      border-bottom: 1px solid var(--border-color);
+      padding: 14px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-logo {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 20px;
+      color: white;
+      box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+    }
+
+    .brand-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .live-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 3px 8px;
+      border-radius: 9999px;
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--success);
+      border-radius: 50%;
+      animation: pulse 1.8s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.9); opacity: 0.8; box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { transform: scale(1.1); opacity: 1; box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+      100% { transform: scale(0.9); opacity: 0.8; box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .realtime-clock {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.04);
+      padding: 6px 14px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .btn {
+      font-family: 'Prompt', sans-serif;
+      font-weight: 500;
+      font-size: 0.875rem;
+      padding: 8px 16px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-refresh {
+      background: #334155;
+      color: white;
+    }
+    .btn-refresh:hover { background: #475569; }
+
+    .btn-success { background: var(--success); color: white; }
+    .btn-success:hover { background: var(--success-hover); }
+
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-danger:hover { background: var(--danger-hover); }
+
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-hover); }
+
+    .btn-warning { background: var(--warning); color: #000; font-weight: 600; }
+    .btn-warning:hover { background: var(--warning-hover); }
+
+    .btn-sm {
+      padding: 5px 10px;
+      font-size: 0.78rem;
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      padding: 24px 28px;
+      max-width: 1540px;
+      margin: 0 auto;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Top Control Cards Grid */
+    .top-controls-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 868px) {
+      .top-controls-grid { grid-template-columns: 1fr; }
+    }
+
+    .control-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+    }
+
+    .control-card-info h3 {
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .control-card-info p {
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+
+    .control-card-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    /* Overview Metrics Strip */
+    .overview-strip {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 16px 24px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    @media (max-width: 680px) {
+      .overview-strip { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .metric-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      border-right: 1px solid rgba(255, 255, 255, 0.08);
+      padding-right: 16px;
+    }
+
+    .metric-item:last-child {
+      border-right: none;
+    }
+
+    .metric-label {
+      font-size: 0.825rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .metric-val {
+      font-size: 1.6rem;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-main);
+    }
+
+    .metric-val.active-color { color: var(--success); }
+    .metric-val.standby-color { color: var(--primary); }
+    .metric-val.inprog-color { color: var(--warning); }
+
+    /* Section Title */
+    .section-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Bot Nodes Grid */
+    .bot-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 18px;
+    }
+
+    .bot-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      transition: transform 0.15s ease, border-color 0.15s ease;
+      position: relative;
+    }
+
+    .bot-card:hover {
+      border-color: #475569;
+      transform: translateY(-2px);
+    }
+
+    .bot-card.offline {
+      opacity: 0.75;
+      border-color: #334155;
+    }
+
+    .bot-card.error {
+      border-color: var(--danger);
+      background: linear-gradient(180deg, rgba(239, 68, 68, 0.06), var(--bg-card));
+    }
+
+    .bot-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .bot-identity {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .bot-name {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .bot-device {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .bot-status-badge {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .badge-online { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+    .badge-offline { background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); }
+    .badge-error { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
+    .badge-standby { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); }
+
+    /* Bot Metrics Bar */
+    .bot-metrics {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      background: var(--bg-card-sub);
+      padding: 10px;
+      border-radius: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+    }
+
+    .bot-metric-col {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .metric-sub-label {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+    }
+
+    .progress-bar {
+      height: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 3px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--primary);
+    }
+
+    /* Last Task Result Box */
+    .task-box {
+      background: var(--bg-card-sub);
+      border-left: 3px solid #64748b;
+      padding: 9px 12px;
+      border-radius: 0 6px 6px 0;
+      font-size: 0.8rem;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .task-box.task-done { border-left-color: var(--success); }
+    .task-box.task-failed { border-left-color: var(--danger); }
+
+    .task-box-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .task-title {
+      color: var(--text-muted);
+      font-size: 0.72rem;
+    }
+
+    .task-badge {
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    .task-badge.done { background: var(--badge-done); color: var(--badge-done-text); }
+    .task-badge.failed { background: var(--badge-failed); color: var(--badge-failed-text); }
+
+    .task-desc {
+      color: var(--text-main);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .heartbeat-text {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Bot Control Buttons */
+    .bot-controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    /* Bottom Row: Orders & Logs Tabs */
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 1024px) {
+      .bottom-grid { grid-template-columns: 1fr; }
+    }
+
+    .panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Table styling */
+    .table-container {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.825rem;
+      text-align: left;
+    }
+
+    th {
+      background: var(--bg-card-sub);
+      color: var(--text-muted);
+      padding: 10px 12px;
+      font-weight: 500;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .status-tag {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .status-pending { background: rgba(148, 163, 184, 0.2); color: #cbd5e1; }
+    .status-queued { background: rgba(59, 130, 246, 0.2); color: #93c5fd; }
+    .status-processing { background: rgba(245, 158, 11, 0.2); color: #fcd34d; }
+    .status-completed { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; }
+    .status-failed { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+    .status-delayed { background: rgba(168, 85, 247, 0.2); color: #d8b4fe; }
+
+    /* Audit Log Stream */
+    .log-stream {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 280px;
+      overflow-y: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+    }
+
+    .log-entry {
+      background: var(--bg-card-sub);
+      padding: 8px 10px;
+      border-radius: 6px;
+      border-left: 2px solid var(--primary);
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .log-meta {
+      display: flex;
+      justify-content: space-between;
+      color: var(--text-muted);
+      font-size: 0.7rem;
+    }
+
+    .log-text {
+      color: var(--text-main);
+    }
+
+    /* Modal */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-content {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 24px;
+      width: 90%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .modal-content input, .modal-content select {
+      background: var(--bg-card-sub);
+      border: 1px solid var(--border-color);
+      color: white;
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-family: inherit;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header>
+    <div class="brand-section">
+      <div class="brand-logo">OX</div>
+      <div class="brand-title">
+        OXIDE Bot Monitor
+        <span class="live-indicator" id="ws-badge">
+          <span class="pulse-dot"></span>
+          <span id="ws-status-text">WS CONNECTED</span>
+        </span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <div class="realtime-clock" id="current-time">--/--/---- --:--:--</div>
+      <button class="btn btn-refresh" onclick="refreshAllData()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"/>
+        </svg>
+        รีเฟรช
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Top Row Control Cards -->
+    <section class="top-controls-grid">
+      <!-- Kill Switch Card -->
+      <div class="control-card">
+        <div class="control-card-info">
+          <h3 id="kill-switch-title">
+            <span id="kill-status-dot" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#10b981;"></span>
+            <span id="kill-switch-label">ทั้งระบบ: เปิด</span>
+          </h3>
+          <p id="kill-switch-desc">ปิดทั้งระบบเพื่อหยุดการรับออเดอร์</p>
+        </div>
+        <div class="control-card-actions">
+          <button class="btn btn-success" id="btn-kill-enable" onclick="toggleKillSwitch(true)">เปิดทั้งระบบ</button>
+          <button class="btn btn-danger" id="btn-kill-disable" onclick="toggleKillSwitch(false)">ปิดทั้งระบบ</button>
+        </div>
+      </div>
+
+      <!-- Code Deployment Package Card -->
+      <div class="control-card">
+        <div class="control-card-info">
+          <h3 id="package-title">แพ็กล่าสุด: oxide-2026-09-17T15-48-05 - 0.18 MB</h3>
+          <p>พร้อมสำหรับการกระจายอัปเดตไปยังเครื่องบอททุกเครื่อง</p>
+        </div>
+        <div class="control-card-actions">
+          <button class="btn btn-primary" onclick="packageNewVersion()">แพ็กโค้ดบอท</button>
+          <button class="btn btn-warning" onclick="deployToAll()">อัปเดตทุกเครื่อง</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Overview Summary Metrics Strip -->
+    <section class="overview-strip">
+      <div class="metric-item">
+        <span class="metric-label">ออนไลน์ทั้งหมด</span>
+        <span class="metric-val" id="metric-online">5</span>
+      </div>
+      <div class="metric-item">
+        <span class="metric-label">Active (รับงาน)</span>
+        <span class="metric-val active-color" id="metric-active">1</span>
+      </div>
+      <div class="metric-item">
+        <span class="metric-label">Standby</span>
+        <span class="metric-val standby-color" id="metric-standby">4</span>
+      </div>
+      <div class="metric-item">
+        <span class="metric-label">กำลังทำงาน (In Progress)</span>
+        <span class="metric-val inprog-color" id="metric-inprog">0</span>
+      </div>
+    </section>
+
+    <!-- Bot Instances Heading -->
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h2 class="section-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+          <line x1="8" y1="21" x2="16" y2="21"></line>
+          <line x1="12" y1="17" x2="12" y2="21"></line>
+        </svg>
+        เครื่องบอทประจำการ (Bot Instances)
+      </h2>
+      <button class="btn btn-sm btn-refresh" onclick="triggerWatchdogCheck()">
+        ตรวจ Heartbeat Timeout
+      </button>
+    </div>
+
+    <!-- Bot Grid -->
+    <section class="bot-grid" id="bot-grid-container">
+      <!-- Bot cards populated dynamically -->
+    </section>
+
+    <!-- Bottom Row: Order Management & Realtime Audit Logs -->
+    <section class="bottom-grid">
+      <!-- Order Management Panel -->
+      <div class="panel">
+        <div class="panel-header">
+          <h2 class="section-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            รายการติดตามออเดอร์ (Order Tracking)
+          </h2>
+          <button class="btn btn-sm btn-primary" onclick="openCreateOrderModal()">+ สร้างออเดอร์จำลอง</button>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>สถานะ</th>
+                <th>ยอดเงิน</th>
+                <th>บอทที่รับผิดชอบ</th>
+                <th>เวลาที่สร้าง</th>
+                <th>ดำเนินการ</th>
+              </tr>
+            </thead>
+            <tbody id="orders-table-body">
+              <tr><td colspan="6" style="text-align:center;color:#64748b;">กำลังโหลดข้อมูลออเดอร์...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Audit & System Event Logs -->
+      <div class="panel">
+        <div class="panel-header">
+          <h2 class="section-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="4 17 10 11 4 5"></polyline>
+              <line x1="12" y1="19" x2="20" y2="19"></line>
+            </svg>
+            Audit Log & กิจกรรมระบบ
+          </h2>
+          <span style="font-size:0.75rem;color:var(--text-muted);" id="log-count">0 รายการ</span>
+        </div>
+        <div class="log-stream" id="audit-log-stream">
+          <div class="log-entry">
+            <div class="log-meta"><span>SYSTEM</span><span>Now</span></div>
+            <div class="log-text">ระบบ Centralized Monitoring พร้อมใช้งาน</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Create Order Modal -->
+  <div class="modal-backdrop" id="order-modal">
+    <div class="modal-content">
+      <h3 style="font-size:1.1rem;font-weight:600;">สร้างออเดอร์ใหม่</h3>
+      <label style="font-size:0.85rem;color:var(--text-muted);">External Order ID</label>
+      <input type="text" id="modal-ext-id" placeholder="ORD-2026-XXXX" />
+      <label style="font-size:0.85rem;color:var(--text-muted);">ยอดเงิน (THB)</label>
+      <input type="number" id="modal-amount" value="500" />
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:10px;">
+        <button class="btn btn-refresh" onclick="closeCreateOrderModal()">ยกเลิก</button>
+        <button class="btn btn-success" onclick="submitCreateOrder()">สร้างออเดอร์</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Live Clock
+    function updateClock() {
+      const now = new Date();
+      document.getElementById('current-time').textContent = now.toLocaleString('th-TH', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      });
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // State
+    let currentBots = [];
+    let ws = null;
+
+    // WebSocket Connection
+    function connectWebSocket() {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${window.location.host}/ws`;
+      
+      try {
+        ws = new WebSocket(wsUrl);
+
+        ws.onopen = () => {
+          document.getElementById('ws-badge').style.borderColor = 'rgba(16, 185, 129, 0.4)';
+          document.getElementById('ws-badge').style.background = 'rgba(16, 185, 129, 0.15)';
+          document.getElementById('ws-status-text').textContent = 'WS CONNECTED';
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            addLogEntry('WEBSOCKET', data.event, JSON.stringify(data.data));
+            // Automatically refresh data on relevant events
+            if (['bot_updated', 'bot_heartbeat', 'kill_switch_updated', 'bots_timeout', 'order_dispatched', 'order_completed', 'package_deployed'].includes(data.event)) {
+              refreshAllData();
+            }
+          } catch (e) {}
+        };
+
+        ws.onclose = () => {
+          document.getElementById('ws-badge').style.borderColor = 'rgba(239, 68, 68, 0.4)';
+          document.getElementById('ws-badge').style.background = 'rgba(239, 68, 68, 0.15)';
+          document.getElementById('ws-status-text').textContent = 'POLLING MODE';
+          setTimeout(connectWebSocket, 4000);
+        };
+      } catch (err) {
+        setTimeout(connectWebSocket, 4000);
+      }
+    }
+    connectWebSocket();
+
+    // Data Loaders
+    async function refreshAllData() {
+      await Promise.all([
+        fetchOverview(),
+        fetchBots(),
+        fetchOrders(),
+        fetchAuditLogs()
+      ]);
+    }
+
+    async function fetchOverview() {
+      try {
+        const res = await fetch('/api/v1/overview');
+        const json = await res.json();
+        if (json.success && json.data) {
+          const d = json.data;
+          document.getElementById('metric-online').textContent = d.onlineCount;
+          document.getElementById('metric-active').textContent = d.activeCount;
+          document.getElementById('metric-standby').textContent = d.standbyCount;
+          document.getElementById('metric-inprog').textContent = d.inProgressCount;
+
+          const isEnabled = d.killSwitchActive;
+          document.getElementById('kill-switch-label').textContent = isEnabled ? 'ทั้งระบบ: เปิด' : 'ทั้งระบบ: ปิด (Kill-Switch)';
+          document.getElementById('kill-switch-desc').textContent = isEnabled ? 'ระบบเปิดรับออเดอร์ปกติ' : 'ปิดทั้งระบบเพื่อหยุดการรับออเดอร์';
+          document.getElementById('kill-status-dot').style.background = isEnabled ? '#10b981' : '#ef4444';
+
+          if (d.latestPackage) {
+            const pkgName = d.latestPackage.package_name || d.latestPackage.version || 'oxide-v1.0.0';
+            document.getElementById('package-title').textContent = `แพ็กล่าสุด: ${pkgName} - ${d.latestPackage.file_size_mb || 0.18} MB`;
+          }
+        }
+      } catch (e) {
+        console.error('Fetch overview failed:', e);
+      }
+    }
+
+    async function fetchBots() {
+      try {
+        const res = await fetch('/api/v1/bots');
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          currentBots = json.data;
+          renderBots(currentBots);
+        }
+      } catch (e) {
+        console.error('Fetch bots failed:', e);
+      }
+    }
+
+    function renderBots(bots) {
+      const container = document.getElementById('bot-grid-container');
+      container.innerHTML = '';
+
+      bots.forEach(bot => {
+        const card = document.createElement('div');
+        const isOffline = bot.status === 'offline';
+        const isError = bot.status === 'error';
+        card.className = `bot-card ${isOffline ? 'offline' : ''} ${isError ? 'error' : ''}`;
+
+        let statusClass = 'badge-standby';
+        let statusLabel = 'STANDBY';
+        if (bot.status === 'online') {
+          statusClass = bot.is_active_accepting ? 'badge-online' : 'badge-standby';
+          statusLabel = bot.is_active_accepting ? 'ONLINE' : 'STANDBY';
+        } else if (bot.status === 'offline') {
+          statusClass = 'badge-offline';
+          statusLabel = 'OFFLINE';
+        } else if (bot.status === 'error') {
+          statusClass = 'badge-error';
+          statusLabel = 'TIMEOUT / ERR';
+        }
+
+        const taskStatusClass = (bot.last_task_status || '').toLowerCase() === 'done' ? 'done' : 'failed';
+        const taskBoxClass = (bot.last_task_status || '').toLowerCase() === 'done' ? 'task-done' : 'task-failed';
+
+        // Heartbeat formatted
+        const hbSecs = bot.last_heartbeat ? Math.round((Date.now() - new Date(bot.last_heartbeat).getTime()) / 1000) : 999;
+        const hbText = hbSecs < 60 ? `${hbSecs}s ago` : `${Math.floor(hbSecs/60)}m ago`;
+
+        card.innerHTML = `
+          <div class="bot-card-header">
+            <div class="bot-identity">
+              <span class="bot-name">${bot.name}</span>
+              <span class="bot-device">${bot.device_name}</span>
+            </div>
+            <span class="bot-status-badge ${statusClass}">${statusLabel}</span>
+          </div>
+
+          <div class="bot-metrics">
+            <div class="bot-metric-col">
+              <span class="metric-sub-label">CPU: ${bot.cpu_percent}%</span>
+              <div class="progress-bar"><div class="progress-fill" style="width: ${Math.min(bot.cpu_percent, 100)}%;"></div></div>
+            </div>
+            <div class="bot-metric-col">
+              <span class="metric-sub-label">RAM: ${bot.memory_percent}%</span>
+              <div class="progress-bar"><div class="progress-fill" style="width: ${Math.min(bot.memory_percent, 100)}%; background: var(--purple);"></div></div>
+            </div>
+          </div>
+
+          <div class="task-box ${taskBoxClass}">
+            <div class="task-box-top">
+              <span class="task-title">งานล่าสุด</span>
+              <span class="task-badge ${taskStatusClass}">${bot.last_task_status || 'Done'}</span>
+            </div>
+            <div class="task-desc">${bot.last_task_desc || '-'}</div>
+            <div class="heartbeat-text">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              Heartbeat: ${hbText} | v${(bot.code_version || '').replace('oxide-', '')}
+            </div>
+          </div>
+
+          <div class="bot-controls">
+            <button class="btn btn-sm btn-success" onclick="sendBotCmd('${bot.id}', 'start')">เริ่มทำงาน</button>
+            <button class="btn btn-sm btn-danger" onclick="sendBotCmd('${bot.id}', 'stop')">หยุดทำงาน</button>
+            <button class="btn btn-sm btn-refresh" onclick="sendBotCmd('${bot.id}', 'restart')">รีสตาร์ท</button>
+            <button class="btn btn-sm btn-warning" onclick="deployToBot('${bot.id}')">อัปเดตโค้ด</button>
+          </div>
+        `;
+
+        container.appendChild(card);
+      });
+    }
+
+    async function fetchOrders() {
+      try {
+        const res = await fetch('/api/v1/orders');
+        const json = await res.json();
+        const tbody = document.getElementById('orders-table-body');
+        if (json.success && Array.isArray(json.data)) {
+          if (json.data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#64748b;">ไม่มีรายการออเดอร์ในระบบ</td></tr>';
+            return;
+          }
+          tbody.innerHTML = json.data.map(o => `
+            <tr>
+              <td><strong>#${o.id}</strong> <span style="color:#64748b;font-size:0.75rem;">(${o.external_order_id})</span></td>
+              <td><span class="status-tag status-${o.status.toLowerCase()}">${o.status}</span></td>
+              <td>${o.amount} ${o.currency}</td>
+              <td>${o.assigned_bot_id || '<span style="color:#64748b;">(ยังไม่ได้กำหนด)</span>'}</td>
+              <td style="font-size:0.75rem;color:#94a3b8;">${new Date(o.created_at).toLocaleTimeString('th-TH')}</td>
+              <td>
+                ${o.status === 'pending' || o.status === 'queued' ? `<button class="btn btn-sm btn-primary" onclick="dispatchOrder('${o.id}')">จ่ายงาน</button>` : ''}
+                ${o.status === 'processing' ? `<button class="btn btn-sm btn-success" onclick="completeOrder('${o.id}')">สำเร็จงาน</button>` : ''}
+              </td>
+            </tr>
+          `).join('');
+        }
+      } catch (e) {
+        console.error('Fetch orders failed:', e);
+      }
+    }
+
+    async function fetchAuditLogs() {
+      try {
+        const res = await fetch('/api/v1/system/audit-logs?limit=15');
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          document.getElementById('log-count').textContent = `${json.data.length} รายการ`;
+          const container = document.getElementById('audit-log-stream');
+          container.innerHTML = json.data.map(l => `
+            <div class="log-entry">
+              <div class="log-meta">
+                <span>[${l.actor || 'SYSTEM'}] ${l.action}</span>
+                <span>${new Date(l.created_at).toLocaleTimeString('th-TH')}</span>
+              </div>
+              <div class="log-text">${l.target_type || ''} ${l.target_id || ''} ${typeof l.metadata === 'object' ? JSON.stringify(l.metadata) : (l.metadata || '')}</div>
+            </div>
+          `).join('');
+        }
+      } catch (e) {
+        console.error('Fetch logs failed:', e);
+      }
+    }
+
+    function addLogEntry(actor, action, message) {
+      const container = document.getElementById('audit-log-stream');
+      const entry = document.createElement('div');
+      entry.className = 'log-entry';
+      entry.innerHTML = `
+        <div class="log-meta">
+          <span>[${actor}] ${action}</span>
+          <span>${new Date().toLocaleTimeString('th-TH')}</span>
+        </div>
+        <div class="log-text">${message}</div>
+      `;
+      container.prepend(entry);
+    }
+
+    // Actions
+    async function toggleKillSwitch(enabled) {
+      try {
+        const res = await fetch('/api/v1/system/kill-switch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enabled })
+        });
+        const json = await res.json();
+        if (json.success) {
+          refreshAllData();
+        } else {
+          alert('ผิดพลาด: ' + (json.error || 'ไม่สามารถเปลี่ยนสถานะได้'));
+        }
+      } catch (err) {
+        alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+      }
+    }
+
+    async function sendBotCmd(botId, command) {
+      try {
+        const res = await fetch(`/api/v1/bots/${botId}/commands`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ command, requested_by: 'web_dashboard' })
+        });
+        const json = await res.json();
+        if (json.success) {
+          refreshAllData();
+        } else {
+          alert('ส่งคำสั่งไม่สำเร็จ: ' + (json.error || 'Unknown error'));
+        }
+      } catch (e) {
+        alert('เชื่อมต่อไม่สำเร็จ');
+      }
+    }
+
+    async function packageNewVersion() {
+      const version = `oxide-${new Date().toISOString().replace(/:/g, '-').slice(0, 19)}`;
+      try {
+        const res = await fetch('/api/v1/deployments/packages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ version, created_by: 'admin' })
+        });
+        const json = await res.json();
+        if (json.success) {
+          alert(`สร้างแพ็กเกจ ${version} เรียบร้อย!`);
+          refreshAllData();
+        }
+      } catch (e) {
+        alert('เกิดข้อผิดพลาดในการแพ็กโค้ด');
+      }
+    }
+
+    async function deployToAll() {
+      if (!confirm('ยืนยันกระจายการอัปเดตโค้ดไปยังเครื่องบอททุกเครื่อง?')) return;
+      try {
+        const res = await fetch('/api/v1/deployments/deploy-all', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ deployed_by: 'admin' })
+        });
+        const json = await res.json();
+        if (json.success) {
+          alert('กระจายโค้ดอัปเดตไปยังทุกเครื่องสำเร็จ!');
+          refreshAllData();
+        }
+      } catch (e) {
+        alert('เกิดข้อผิดพลาดในการอัปเดต');
+      }
+    }
+
+    async function deployToBot(botId) {
+      try {
+        const res = await fetch(`/api/v1/deployments/deploy-bot/${botId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ deployed_by: 'admin' })
+        });
+        const json = await res.json();
+        if (json.success) {
+          alert(`ส่งคำสั่งอัปเดตไปยัง ${botId} สำเร็จ!`);
+          refreshAllData();
+        }
+      } catch (e) {
+        alert('อัปเดตไม่สำเร็จ');
+      }
+    }
+
+    async function triggerWatchdogCheck() {
+      try {
+        const res = await fetch('/api/v1/bots/watchdog/check', { method: 'POST' });
+        const json = await res.json();
+        alert(`ตรวจสอบเสร็จสิ้น: มีเครื่อง Timeout ${json.data?.timedOutBots?.length || 0} เครื่อง`);
+        refreshAllData();
+      } catch (e) {
+        refreshAllData();
+      }
+    }
+
+    async function dispatchOrder(orderId) {
+      try {
+        const res = await fetch(`/api/v1/orders/${orderId}/dispatch`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        const json = await res.json();
+        if (json.success) {
+          const botAssigned = json.data?.assigned_bot_id || json.order?.assigned_bot_id || 'บอท';
+          alert(`จ่ายงาน #${orderId} ให้ ${botAssigned} สำเร็จ!`);
+          refreshAllData();
+        } else {
+          alert('จ่ายงานไม่สำเร็จ: ' + (json.error || 'Kill-Switch กำลังปิดระบบ'));
+        }
+      } catch (e) {
+        alert('เกิดข้อผิดพลาดในการจ่ายงาน');
+      }
+    }
+
+    async function completeOrder(orderId) {
+      try {
+        const res = await fetch(`/api/v1/orders/${orderId}/complete`, { method: 'POST' });
+        const json = await res.json();
+        if (json.success) {
+          refreshAllData();
+        }
+      } catch (e) {
+        alert('เกิดข้อผิดพลาด');
+      }
+    }
+
+    function openCreateOrderModal() {
+      document.getElementById('modal-ext-id').value = 'ORD-' + Math.floor(1000 + Math.random() * 9000);
+      document.getElementById('order-modal').style.display = 'flex';
+    }
+
+    function closeCreateOrderModal() {
+      document.getElementById('order-modal').style.display = 'none';
+    }
+
+    async function submitCreateOrder() {
+      const extId = document.getElementById('modal-ext-id').value;
+      const amount = parseFloat(document.getElementById('modal-amount').value) || 100;
+      try {
+        const res = await fetch('/api/v1/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ external_order_id: extId, amount, currency: 'THB' })
+        });
+        const json = await res.json();
+        if (json.success) {
+          closeCreateOrderModal();
+          refreshAllData();
+        } else {
+          alert('ไม่สามารถสร้างออเดอร์ได้: ' + (json.error || ''));
+        }
+      } catch (e) {
+        alert('เกิดข้อผิดพลาดในการสร้างออเดอร์');
+      }
+    }
+
+    // Initial Load & polling backup (every 6 seconds)
+    refreshAllData();
+    setInterval(refreshAllData, 6000);
+  </script>
+</body>
+</html>

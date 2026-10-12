@@ -7,6 +7,21 @@ import { deploymentService } from './deploymentService';
 export class BotService {
   private simulatorUrl: string = process.env.BOT_SIMULATOR_URL || 'http://localhost:8788';
 
+  constructor() {
+    // Keep online bots active with live simulated heartbeats
+    setInterval(() => {
+      const now = new Date();
+      for (const bot of this.initialBots) {
+        if (bot.status === 'online') {
+          bot.last_heartbeat = now;
+          bot.cpu_percent = Math.round((6 + Math.random() * 14) * 10) / 10;
+          bot.memory_percent = Math.round((30 + Math.random() * 15) * 10) / 10;
+          bot.uptime_seconds += 5;
+        }
+      }
+    }, 5000);
+  }
+
   // Seed baseline bots matching PDF Page 2 UI
   private initialBots: BotAgent[] = [
     {
@@ -156,7 +171,7 @@ export class BotService {
       const pool = getPool();
       await pool.query(
         `UPDATE oxide_bot_agents
-         SET status = $1, updated_at = NOW()
+         SET status = $1, last_heartbeat = NOW(), updated_at = NOW()
          WHERE id = $2;`,
         [nextStatus, botId]
       );
@@ -183,6 +198,7 @@ export class BotService {
     const targetBot = this.initialBots.find((b) => b.id === botId);
     if (targetBot) {
       targetBot.status = nextStatus;
+      targetBot.last_heartbeat = new Date();
       targetBot.is_active_accepting = nextStatus === 'online';
     }
 

@@ -67,9 +67,19 @@ export class OrderController {
         return;
       }
 
-      const targetBotId = parsed.data.bot_id || parsed.data.botId || 'bot-02';
+      // Automatically select an online bot if not specified
+      const { botService } = require('../services/botService');
+      const bots = await botService.getBots();
+      const onlineBot = bots.find((b: any) => b.status === 'online') || bots[0];
+      const targetBotId = parsed.data.bot_id || parsed.data.botId || onlineBot?.id || 'bot-02';
+
       const result = await orderService.dispatchOrder(orderId, targetBotId);
-      res.status(200).json(result);
+      res.status(200).json({
+        success: true,
+        order: result.order,
+        data: result.order,
+        message: result.message,
+      });
     } catch (err: any) {
       res.status(400).json({ success: false, error: err.message });
     }

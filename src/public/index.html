@@ -847,7 +847,8 @@
           document.getElementById('kill-status-dot').style.background = isEnabled ? '#10b981' : '#ef4444';
 
           if (d.latestPackage) {
-            document.getElementById('package-title').textContent = `แพ็กล่าสุด: ${d.latestPackage.version} - ${d.latestPackage.file_size_mb} MB`;
+            const pkgName = d.latestPackage.package_name || d.latestPackage.version || 'oxide-v1.0.0';
+            document.getElementById('package-title').textContent = `แพ็กล่าสุด: ${pkgName} - ${d.latestPackage.file_size_mb || 0.18} MB`;
           }
         }
       } catch (e) {
@@ -963,8 +964,8 @@
               <td>${o.assigned_bot_id || '<span style="color:#64748b;">(ยังไม่ได้กำหนด)</span>'}</td>
               <td style="font-size:0.75rem;color:#94a3b8;">${new Date(o.created_at).toLocaleTimeString('th-TH')}</td>
               <td>
-                ${o.status === 'pending' || o.status === 'queued' ? `<button class="btn btn-sm btn-primary" onclick="dispatchOrder(${o.id})">จ่ายงาน</button>` : ''}
-                ${o.status === 'processing' ? `<button class="btn btn-sm btn-success" onclick="completeOrder(${o.id})">สำเร็จงาน</button>` : ''}
+                ${o.status === 'pending' || o.status === 'queued' ? `<button class="btn btn-sm btn-primary" onclick="dispatchOrder('${o.id}')">จ่ายงาน</button>` : ''}
+                ${o.status === 'processing' ? `<button class="btn btn-sm btn-success" onclick="completeOrder('${o.id}')">สำเร็จงาน</button>` : ''}
               </td>
             </tr>
           `).join('');
@@ -1113,16 +1114,21 @@
 
     async function dispatchOrder(orderId) {
       try {
-        const res = await fetch(`/api/v1/orders/${orderId}/dispatch`, { method: 'POST' });
+        const res = await fetch(`/api/v1/orders/${orderId}/dispatch`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
         const json = await res.json();
         if (json.success) {
-          alert(`จ่ายงานให้ ${json.data.assigned_bot_id} สำเร็จ!`);
+          const botAssigned = json.data?.assigned_bot_id || json.order?.assigned_bot_id || 'บอท';
+          alert(`จ่ายงาน #${orderId} ให้ ${botAssigned} สำเร็จ!`);
           refreshAllData();
         } else {
           alert('จ่ายงานไม่สำเร็จ: ' + (json.error || 'Kill-Switch กำลังปิดระบบ'));
         }
       } catch (e) {
-        alert('เกิดข้อผิดพลาด');
+        alert('เกิดข้อผิดพลาดในการจ่ายงาน');
       }
     }
 
