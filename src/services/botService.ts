@@ -361,6 +361,14 @@ export class BotService {
       req.end();
     });
   }
+
+  public updateBotTask(botId: string, taskDesc: string, taskStatus?: 'Failed' | 'Done' | 'In Progress'): void {
+    const b = this.initialBots.find((bot) => bot.id === botId);
+    if (b) {
+      b.last_task_desc = taskDesc;
+      b.last_task_status = taskStatus;
+    }
+  }
 }
 
 export const botService = new BotService();

@@ -964,7 +964,19 @@
               <td>${o.assigned_bot_id || '<span style="color:#64748b;">(ยังไม่ได้กำหนด)</span>'}</td>
               <td style="font-size:0.75rem;color:#94a3b8;">${new Date(o.created_at).toLocaleTimeString('th-TH')}</td>
               <td>
-                ${o.status === 'pending' || o.status === 'queued' ? `<button class="btn btn-sm btn-primary" onclick="dispatchOrder('${o.id}')">จ่ายงาน</button>` : ''}
+                ${o.status === 'pending' || o.status === 'queued' ? `
+                  <div style="display:inline-flex;gap:6px;align-items:center;">
+                    <select id="bot-sel-${o.id}" style="background:#1e293b;color:#f8fafc;border:1px solid #475569;border-radius:6px;padding:3px 6px;font-size:0.75rem;">
+                      <option value="">กระจายงานอัตโนมัติ (Auto)</option>
+                      <option value="bot-01">bot-01 (Kaotam BOT)</option>
+                      <option value="bot-02">bot-02 (Kaotam B...)</option>
+                      <option value="bot-03">bot-03 (Kaotam B...)</option>
+                      <option value="bot-04">bot-04 (Kaotam B...)</option>
+                      <option value="bot-05">bot-05 (Kaotam B...)</option>
+                    </select>
+                    <button class="btn btn-sm btn-primary" onclick="dispatchOrder('${o.id}')">จ่ายงาน</button>
+                  </div>
+                ` : ''}
                 ${o.status === 'processing' ? `<button class="btn btn-sm btn-success" onclick="completeOrder('${o.id}')">สำเร็จงาน</button>` : ''}
               </td>
             </tr>
@@ -1114,10 +1126,14 @@
 
     async function dispatchOrder(orderId) {
       try {
+        const selectEl = document.getElementById(`bot-sel-${orderId}`);
+        const selectedBot = selectEl ? selectEl.value : '';
+        const bodyPayload = selectedBot ? { botId: selectedBot } : {};
+
         const res = await fetch(`/api/v1/orders/${orderId}/dispatch`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({})
+          body: JSON.stringify(bodyPayload)
         });
         const json = await res.json();
         if (json.success) {

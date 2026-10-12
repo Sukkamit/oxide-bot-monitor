@@ -10,11 +10,13 @@ const createOrderSchema = z.object({
 });
 
 const dispatchSchema = z.object({
-  botId: z.string().optional().default('bot-02'),
+  botId: z.string().optional(),
   bot_id: z.string().optional(),
 });
 
 export class OrderController {
+  private static roundRobinIndex: number = 0;
+
   public getOrders = async (req: Request, res: Response): Promise<void> => {
     try {
       const status = req.query.status as string | undefined;
@@ -67,13 +69,26 @@ export class OrderController {
         return;
       }
 
-      // Automatically select an online bot if not specified
       const { botService } = require('../services/botService');
-      const bots = await botService.getBots();
-      const onlineBot = bots.find((b: any) => b.status === 'online') || bots[0];
-      const targetBotId = parsed.data.bot_id || parsed.data.botId || onlineBot?.id || 'bot-02';
+      let targetBotId = parsed.data.bot_id || parsed.data.botId;
 
-      const result = await orderService.dispatchOrder(orderId, targetBotId);
+      if (!targetBotId) {
+        // Automatically load-balance across online bots
+        const bots = await botService.getBots();
+        const onlineBots = bots.filter((b: any) => b.status === 'online');
+        if (onlineBots.length > 0) {
+          const index = OrderController.roundRobinIndex % onlineBots.length;
+          targetBotId = onlineBots[index].id;
+          OrderController.roundRobinIndex++;
+        } else {
+          targetBotId = bots[0]?.id || 'bot-02';
+        }
+      }
+
+      const finalBotId = targetBotId || 'bot-02';
+      const result = await orderService.dispatchOrder(orderId, finalBotId);
+      botService.updateBotTask(finalBotId, `กำลังประมวลผลออเดอร์ #${orderId}`, 'In Progress');
+
       res.status(200).json({
         success: true,
         order: result.order,
@@ -90,6 +105,10 @@ export class OrderController {
       const orderId = isNaN(Number(req.params.id)) ? req.params.id : parseInt(req.params.id, 10);
       const botId = req.body?.botId || 'bot-01';
       const order = await orderService.completeOrder(orderId, botId, req.body?.result);
+
+      const { botService } = require('../services/botService');
+      botService.updateBotTask(order.assigned_bot_id || botId, `สำเร็จออเดอร์ #${orderId}`, 'Done');
+
       res.status(200).json({ success: true, data: order });
     } catch (err: any) {
       res.status(400).json({ success: false, error: err.message });
