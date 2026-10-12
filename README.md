@@ -142,6 +142,25 @@ stateDiagram-v2
 
 ### วิธีที่ 1: รันแบบ Standalone ในเครื่อง (Local Development)
 
+#### 1. การตั้งค่า Environment Variables (`.env`)
+คัดลอกไฟล์ `.env.example` เพื่อสร้างไฟล์ `.env` สำหรับกำหนดค่าคอนฟิก:
+```bash
+# บน Linux / macOS / Git Bash
+cp .env.example .env
+
+# หรือบน Windows PowerShell
+Copy-Item .env.example .env
+```
+
+**ตารางคำอธิบายตัวแปร Environment Variables ทั้งหมด:**
+
+| ตัวแปร (Variable) | ค่าเริ่มต้น (Default) | คำอธิบาย (Description) |
+| :--- | :--- | :--- |
+| `PORT` | `3002` | พอร์ตสำหรับ Central Bot Monitoring Server และ Control Panel Web UI |
+| `DATABASE_URL` | `postgresql://oxide:oxide_dev@localhost:55432/oxide_monitor` | URL สำหรับเชื่อมต่อฐานข้อมูล PostgreSQL (รองรับ Fallback In-Memory อัตโนมัติ) |
+| `BOT_SIMULATOR_URL` | `http://localhost:8788` | URL ของ Bot Simulator Fleet สำหรับจำลองการสื่อสาร Heartbeat และคำสั่งบอท |
+
+#### 2. การติดตั้งและรันเซิร์ฟเวอร์
 ```bash
 # 1. ติดตั้ง Dependencies
 npm install
@@ -149,11 +168,11 @@ npm install
 # 2. รัน Bot Simulator (พอร์ต 8788) ในหน้าต่างที่ 1
 npm run simulator
 
-# 3. รัน Central Monitoring Server (พอร์ต 3000) ในหน้าต่างที่ 2
+# 3. รัน Central Monitoring Server (พอร์ต 3002) ในหน้าต่างที่ 2
 npm run dev
 
 # 4. เปิดเบราว์เซอร์เข้าสู่ระบบ
-# URL: http://localhost:3000
+# URL: http://localhost:3002
 ```
 
 > **หมายเหตุ:** ระบบมีกลไก In-Memory Resilient Store สำรองอัตโนมัติ หากยังไม่ได้ต่อฐานข้อมูล PostgreSQL ตัวระบบและ Dashboard จะยังสามารถทำงาน ทดสอบสวิตช์ Kill-Switch, สั่งคำสั่งบอท, สร้างออเดอร์ และรันเทสได้ 100% ครบทุกฟังก์ชัน
@@ -163,12 +182,13 @@ npm run dev
 ### วิธีที่ 2: รันผ่าน Docker Compose
 
 ```bash
-# สร้างและสตาร์ททั้ง 3 Services (Postgres 55432, Simulator 8788, Central Monitor 3000)
+# สร้างและสตาร์ททั้ง 3 Services (Postgres 55432, Simulator 8788, Central Monitor 3002)
 docker compose up --build -d
 
 # เปิดเบราว์เซอร์
 # http://localhost:3002
 ```
+
 
 ---
 
