@@ -28,15 +28,15 @@ export class BotService {
       id: 'bot-01',
       name: 'Kaotam BOT',
       device_name: 'LAPTOP-RCVDH...',
-      status: 'offline',
+      status: 'online',
       cpu_percent: 18.4,
       memory_percent: 41.2,
       uptime_seconds: 86400,
       last_heartbeat: new Date(),
-      last_task_desc: 'test 1092 สำเร็จ UF-1W3-ON4',
-      last_task_status: 'Failed',
+      last_task_desc: 'Standby for queue',
+      last_task_status: 'Done',
       code_version: 'oxide-2026-09-17T15-48-05',
-      is_active_accepting: false,
+      is_active_accepting: true,
       created_at: new Date(),
       updated_at: new Date(),
     },
@@ -360,8 +360,8 @@ export class BotService {
       standbyCount = onlineCount;
     } else {
       // Active count represents bots actively assigned/processing work
-      activeCount = busyOnlineBots.length > 0 ? busyOnlineBots.length : (onlineCount > 0 ? 1 : 0);
-      standbyCount = Math.max(0, onlineCount - activeCount);
+      activeCount = inProgressCount;
+      standbyCount = Math.max(0, onlineCount - inProgressCount);
     }
 
     return {

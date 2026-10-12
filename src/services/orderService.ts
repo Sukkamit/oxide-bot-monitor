@@ -7,7 +7,7 @@ export class OrderService {
     {
       id: 1,
       external_order_id: 'TEST-ORDER-001',
-      status: 'processing',
+      status: 'completed',
       amount: 1250.0,
       currency: 'THB',
       assigned_bot_id: 'bot-02',
